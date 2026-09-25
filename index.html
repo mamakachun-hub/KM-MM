@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保良局田家炳小學 - 公里和毫米解碼遊戲 (AI 增強版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* 動畫效果 */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in forwards;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
+        }
+        .ai-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* 卡片與按鈕樣式 */
+        .game-card {
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .option-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 圖片圖標容器 */
+        .icon-container {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            border: 4px solid #7dd3fc;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <header class="bg-blue-800 text-white p-4 shadow-lg text-center relative z-10 border-b-4 border-blue-600">
+        <h1 class="text-2xl md:text-3xl font-black tracking-wider flex items-center justify-center gap-2">
+            <i class="fa-solid fa-school"></i> 保良局田家炳小學
+        </h1>
+        <p class="text-blue-200 mt-1 font-bold flex items-center justify-center gap-2 text-sm md:text-base">
+            小三數學挑戰：公里和毫米解碼遊戲 <span class="bg-indigo-500/80 text-xs px-2.5 py-0.5 rounded-full text-white font-normal border border-indigo-300"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 智能升級版</span>
+        </p>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 relative z-0">
+        
+        <!-- 設定畫面 -->
+        <div id="setupScreen" class="bg-white rounded-3xl shadow-xl p-6 md:p-10 w-full max-w-lg transform transition-all border border-slate-100 my-4">
+            <div class="text-center mb-6">
+                <div class="inline-block bg-blue-100 p-4 rounded-full mb-3 text-blue-600 text-4xl">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800">準備解碼</h2>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-slate-700 font-bold mb-2"><i class="fa-solid fa-user-astronaut mr-2 text-blue-500"></i>學生姓名：</label>
+                    <input type="text" id="studentName" placeholder="請輸入你的姓名" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white focus:outline-none text-lg transition-colors font-bold text-slate-700">
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-2"><i class="fa-solid fa-list-check mr-2 text-blue-500"></i>題目數量：</label>
+                    <select id="questionCount" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:bg-white focus:outline-none text-lg font-bold text-slate-700 cursor-pointer">
+                        <option value="5" selected>5 題</option>
+                        <option value="6">6 題</option>
+                        <option value="7">7 題</option>
+                        <option value="8">8 題</option>
+                        <option value="9">9 題</option>
+                        <option value="10">10 題</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-2"><i class="fa-solid fa-microchip mr-2 text-indigo-500"></i>題目來源：</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="questionSource" value="db" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked>
+                            <span class="ml-2 font-bold text-sm md:text-base text-slate-700">📚 經典題庫 (40題)</span>
+                        </label>
+                        <label class="flex items-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors bg-indigo-50/50 border-indigo-200">
+                            <input type="radio" name="questionSource" value="ai" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+                            <span class="ml-2 font-bold text-sm md:text-base text-indigo-900"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> AI 即時生成</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-2"><i class="fa-solid fa-layer-group mr-2 text-indigo-500"></i>選擇難度：</label>
+                    <div class="space-y-2.5">
+                        <label class="flex items-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="difficulty" value="1" class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <div class="ml-3">
+                                <span class="block text-base md:text-lg font-bold text-slate-700">難度一：基礎配對</span>
+                                <span class="block text-xs md:text-sm text-slate-500">只提供物件，選擇合適單位 (毫米/公里)</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="difficulty" value="2" class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+                            <div class="ml-3">
+                                <span class="block text-base md:text-lg font-bold text-slate-700">難度二：數字配對</span>
+                                <span class="block text-xs md:text-sm text-slate-500">提供數字，選擇合適單位 (毫米/公里)</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="difficulty" value="3" class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <div class="ml-3">
+                                <span class="block text-base md:text-lg font-bold text-slate-700">難度三：終極挑戰</span>
+                                <span class="block text-xs md:text-sm text-slate-500">提供數字，4個單位選擇 (毫米/厘米/米/公里)</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="startGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl shadow-lg transform transition active:scale-95 text-xl mt-2 tracking-wide flex items-center justify-center gap-2">
+                    <span id="startBtnText">開始挑戰</span> <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 載入中 Overlay -->
+        <div id="loadingOverlay" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+            <div class="bg-slate-800 p-8 rounded-3xl text-center shadow-2xl border border-slate-700 max-w-sm mx-4">
+                <i class="fa-solid fa-circle-notch fa-spin text-5xl text-indigo-400 mb-4"></i>
+                <h3 class="text-2xl font-bold mb-2" id="loadingTitle">AI 智能導師思考中...</h3>
+                <p class="text-slate-300 text-sm" id="loadingSubtitle">正在為你設計全新的數學挑戰題目</p>
+            </div>
+        </div>
+
+        <!-- 遊戲畫面 -->
+        <div id="gameScreen" class="hidden w-full max-w-3xl flex flex-col gap-5">
+            
+            <!-- 資訊列 -->
+            <div class="flex justify-between items-center bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-200 flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="text-base md:text-lg font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg">
+                        <i class="fa-solid fa-user-graduate text-blue-600 mr-2"></i><span id="displayPlayerName"></span>
+                    </div>
+                    <div class="text-base md:text-lg font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg">
+                        <i class="fa-solid fa-flag-checkered mr-2"></i>進度: <span id="progressText">1 / 5</span>
+                    </div>
+                </div>
+                <div id="timerDisplay" class="text-xl md:text-2xl font-black text-slate-700 bg-slate-100 px-4 py-1.5 rounded-xl border-2 border-slate-200 transition-colors duration-300 flex items-center justify-center">
+                    <i class="fa-regular fa-clock mr-2"></i> <span id="timerText">120</span>s
+                </div>
+            </div>
+
+            <!-- 題目區 -->
+            <div class="game-card rounded-3xl p-6 md:p-8 relative text-center pop-in border-t-8 border-t-blue-500" id="questionCard">
+                
+                <!-- 視覺圖像 -->
+                <div class="mx-auto w-28 h-28 md:w-36 md:h-36 rounded-full icon-container flex items-center justify-center mb-4 shadow-inner text-blue-600 relative">
+                    <i id="questionIcon" class="fa-solid fa-bridge-water text-5xl md:text-6xl drop-shadow-md"></i>
+                </div>
+
+                <!-- AI 提示按鈕 -->
+                <button onclick="fetchAIHint()" class="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold px-4 py-2 rounded-full border border-indigo-200 transition mb-4 shadow-sm">
+                    <i class="fa-solid fa-lightbulb text-amber-500"></i> 💡 AI 導師提示
+                </button>
+
+                <!-- 題目文字 -->
+                <p class="text-slate-500 font-bold mb-2 text-base md:text-lg">請問最適合的量度單位是？</p>
+                <h3 id="questionText" class="text-2xl md:text-3xl font-black text-slate-800 tracking-wide mb-6 leading-snug">
+                    港珠澳大橋的全長大約是 55 [ ? ]
+                </h3>
+
+                <!-- AI 提示結果顯示區域 -->
+                <div id="aiHintBox" class="hidden text-left bg-indigo-50 border border-indigo-200 p-4 rounded-2xl mb-6 text-indigo-900 text-sm md:text-base fade-in relative">
+                    <button onclick="document.getElementById('aiHintBox').classList.add('hidden')" class="absolute top-2 right-3 text-indigo-400 hover:text-indigo-600 font-bold text-lg">&times;</button>
+                    <div class="flex items-start gap-2">
+                        <i class="fa-solid fa-robot text-indigo-600 text-xl mt-0.5"></i>
+                        <div>
+                            <span class="font-bold block mb-1">AI 導師思考小點撥：</span>
+                            <span id="aiHintText">提示載入中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 選項區 -->
+                <div id="optionsContainer" class="grid grid-cols-2 gap-3 md:gap-5 max-w-xl mx-auto">
+                    <!-- 動態生成選項 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 結果畫面 -->
+        <div id="resultScreen" class="hidden w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-6 md:p-10 text-center border-t-8 border-indigo-500 pop-in my-4">
+            <h2 id="resultTitle" class="text-3xl md:text-5xl font-black mb-3 text-indigo-600">挑戰完成！</h2>
+            <p id="resultSubtitle" class="text-base md:text-xl text-slate-600 font-bold mb-6"></p>
+            
+            <!-- 遊玩時間與成績資訊卡 -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl border-2 border-blue-100 mb-6 flex justify-around items-center max-w-lg mx-auto shadow-sm">
+                <div class="text-center w-1/2">
+                    <div class="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-stopwatch text-blue-500 mr-1"></i>完成時間</div>
+                    <div id="displayTimeTaken" class="text-2xl md:text-4xl font-black text-blue-700">0 秒</div>
+                </div>
+                <div class="h-12 w-0.5 bg-slate-300"></div>
+                <div class="text-center w-1/2">
+                    <div class="text-xs md:text-sm text-slate-500 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-star text-yellow-500 mr-1"></i>最終得分</div>
+                    <div id="displayFinalScore" class="text-2xl md:text-4xl font-black text-indigo-700">0 分</div>
+                </div>
+            </div>
+
+            <!-- AI 專屬獲獎徽章區 -->
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 max-w-lg mx-auto text-center">
+                <h4 class="font-bold text-slate-700 mb-3 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-award text-amber-500"></i> AI 獲獎專屬徽章
+                </h4>
+                <div id="aiMascotContainer" class="flex flex-col items-center justify-center min-h-[120px]">
+                    <button id="generateMascotBtn" onclick="generateAIMascot()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md transition text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-palette"></i> 點擊使用 AI 生成個人稱號徽章
+                    </button>
+                    <div id="mascotImageWrapper" class="hidden flex flex-col items-center">
+                        <img id="mascotImg" src="" alt="AI Badge" class="w-28 h-28 rounded-full border-4 border-amber-400 shadow-md object-cover mb-2">
+                        <span id="mascotTitle" class="font-black text-indigo-700 text-base"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 錯題記錄 -->
+            <div id="mistakesSection" class="mb-6 text-left bg-rose-50 p-5 rounded-2xl border border-rose-100 hidden">
+                <h3 class="text-lg md:text-xl font-black text-rose-700 mb-3 flex items-center"><i class="fa-solid fa-circle-exclamation mr-2 text-xl"></i>錯題記錄與解說</h3>
+                <ul id="mistakesList" class="space-y-3 text-slate-700 text-base">
+                    <!-- 動態生成錯題 -->
+                </ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-3 mt-6">
+                <button onclick="downloadCertificate()" class="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-black py-3.5 px-6 rounded-xl shadow-lg transform transition active:scale-95 text-base md:text-lg flex items-center justify-center gap-2 border-b-4 border-amber-600 active:border-b-0">
+                    <i class="fa-solid fa-award text-xl"></i> 下載嘉許狀 (JPG)
+                </button>
+                <button onclick="location.reload()" class="sm:w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3.5 px-6 rounded-xl shadow transform transition active:scale-95 text-base md:text-lg border-b-4 border-slate-300 active:border-b-0">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> 再玩一次
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 反饋 Modal -->
+    <div id="feedbackModal" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex-col items-center justify-center fade-in backdrop-blur-md p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl pop-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-4 bg-rose-500"></div>
+            <i class="fa-solid fa-circle-xmark text-6xl text-rose-500 mb-3 mt-2"></i>
+            <h2 class="text-3xl font-black text-slate-800 mb-4">答錯了！</h2>
+            
+            <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 mb-5 text-left">
+                <p class="text-slate-600 font-bold mb-1">正確單位應該是：</p>
+                <p id="correctAnswerText" class="text-2xl font-black text-green-600 mb-3"></p>
+                
+                <p class="text-slate-600 font-bold mb-1 flex items-center justify-between">
+                    <span><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>解說：</span>
+                    <!-- Gemini TTS 語音朗讀按鈕 -->
+                    <button id="ttsBtn" onclick="speakExplanation()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-full transition flex items-center gap-1 shadow">
+                        <i class="fa-solid fa-volume-high"></i> 聽 AI 語音解說
+                    </button>
+                </p>
+                <p id="explanationText" class="text-base text-slate-800 leading-relaxed font-medium mt-2"></p>
+            </div>
+
+            <div class="inline-block bg-slate-100 px-6 py-2 rounded-full font-bold text-slate-500 text-sm">
+                自動繼續 <span id="pauseCountdown" class="text-blue-600 font-black ml-1 text-lg">3</span> 秒...
+            </div>
+        </div>
+    </div>
+
+    <!-- 隱藏的 Canvas 供生成證書用 -->
+    <canvas id="certificateCanvas" width="1200" height="848" class="hidden"></canvas>
+
+    <script>
+        /* 基礎題目資料庫 (40題擴充版) */
+        const questionsDB = [
+            // ================= 毫米 (mm) =================
+            { id: 1, name: "高鐵列車車票的厚度", icon: "fa-ticket", value: 1, unit: "毫米", diff: [1,2,3], exp: "車票非常薄，量度很薄的物件我們會用「毫米」。" },
+            { id: 2, name: "一枚五角硬幣的厚度", icon: "fa-coins", value: 2, unit: "毫米", diff: [1,2,3], exp: "硬幣的厚度非常小，適合用「毫米」作為單位。" },
+            { id: 3, name: "一本中國歷史課本的厚度", icon: "fa-book", value: 15, unit: "毫米", diff: [1,2,3], exp: "課本的厚度相對較小，用「毫米」最為合適。" },
+            { id: 4, name: "一粒白米的長度", icon: "fa-seedling", value: 5, unit: "毫米", diff: [1,2,3], exp: "白米非常細小，量度微小物體會用「毫米」。" },
+            { id: 5, name: "一隻螞蟻的長度", icon: "fa-bug", value: 4, unit: "毫米", diff: [1,2,3], exp: "螞蟻非常微小，量度小昆蟲通常用「毫米」。" },
+            { id: 6, name: "學生證的厚度", icon: "fa-id-card", value: 1, unit: "毫米", diff: [1,2,3], exp: "塑膠學生證非常薄，大約只有1毫米厚。" },
+            { id: 7, name: "一部智能手機的厚度", icon: "fa-mobile-screen", value: 8, unit: "毫米", diff: [1,2,3], exp: "現在的智能手機設計都很輕薄，厚度通常用「毫米」量度。" },
+            { id: 8, name: "一粒綠豆的長度", icon: "fa-circle-dot", value: 6, unit: "毫米", diff: [1,2,3], exp: "豆類種子體積微小，長度適合用「毫米」。" },
+            { id: 9, name: "電腦螢幕邊框的厚度", icon: "fa-desktop", value: 12, unit: "毫米", diff: [1,2,3], exp: "螢幕邊框雖然不算極薄，但也非常小，適合用「毫米」。" },
+            { id: 10, name: "一張八達通卡的厚度", icon: "fa-credit-card", value: 1, unit: "毫米", diff: [1,2,3], exp: "八達通卡和學生證一樣，是非常薄的膠卡，厚約1毫米。" },
+
+            // ================= 公里 (km) =================
+            { id: 11, name: "港珠澳大橋的全長", icon: "fa-bridge-water", value: 55, unit: "公里", diff: [1,2,3], exp: "港珠澳大橋是一座連接香港、珠海和澳門的巨大橋樑，非常長，所以用「公里」來量度。" },
+            { id: 12, name: "廣深港高鐵(香港段)的長度", icon: "fa-train-subway", value: 26, unit: "公里", diff: [1,2,3], exp: "高鐵連接不同城市，距離很遠，所以用「公里」。" },
+            { id: 13, name: "大灣區(香港到廣州)的距離", icon: "fa-map-location-dot", value: 130, unit: "公里", diff: [1,2,3], exp: "香港和廣州是兩個不同的城市，距離十分遙遠，會用「公里」來表示。" },
+            { id: 14, name: "香港國際機場跑道的長度", icon: "fa-plane-departure", value: 3, unit: "公里", diff: [1,2,3], exp: "供飛機起降的跑道非常長，要用「公里」。" },
+            { id: 15, name: "青馬大橋的全長", icon: "fa-bridge", value: 2, unit: "公里", diff: [1,2,3], exp: "青馬大橋是跨海大橋，長度非常長，所以用「公里」。" },
+            { id: 16, name: "香港到北京的飛行距離", icon: "fa-plane-up", value: 1960, unit: "公里", diff: [1,2,3], exp: "香港與首都北京相距甚遠，跨越半個中國，飛行距離必須用「公里」計算。" },
+            { id: 17, name: "明長城的總長度", icon: "fa-monument", value: 8851, unit: "公里", diff: [1,2,3], exp: "萬里長城是中國古代偉大建築，跨越中國北方多個省份，長度極長，用「公里」。" },
+            { id: 18, name: "港鐵屯馬綫的總長度", icon: "fa-train", value: 56, unit: "公里", diff: [1,2,3], exp: "屯馬綫是香港最長的鐵路線，貫通新界東、西與九龍，長度用「公里」。" },
+            { id: 19, name: "大埔踏單車到沙田的單車徑長度", icon: "fa-person-biking", value: 12, unit: "公里", diff: [1,2,3], exp: "跨區的單車徑路線長達數以萬米計，所以用「公里」來量度較方便。" },
+            { id: 20, name: "香港到澳門的航海距離", icon: "fa-ship", value: 60, unit: "公里", diff: [1,2,3], exp: "兩個特別行政區隔著珠江口，距離遙遠，需要用「公里」。" },
+            { id: 21, name: "國家太空站繞地球一圈的飛行距離", icon: "fa-satellite", value: 42000, unit: "公里", diff: [1,2,3], exp: "太空站繞行地球一圈的軌跡非常巨大，用「公里」表示最合適。" },
+            { id: 22, name: "大埔區到中環的行車距離", icon: "fa-car", value: 25, unit: "公里", diff: [1,2,3], exp: "從新界區駕駛汽車到香港島，跨越不同地區，距離用「公里」量度。" },
+
+            // ================= 米 (m) ================= (難度三)
+            { id: 23, name: "保良局田家炳小學與仁濟醫院蔡衍濤小學的距離", icon: "fa-school", value: 150, unit: "米", diff: [3], exp: "兩間學校同樣位於大埔運頭塘邨，位置相近，步行只需一會兒，距離適合用「米」。" },
+            { id: 24, name: "香港故宮文化博物館的高度", icon: "fa-building-columns", value: 50, unit: "米", diff: [3], exp: "大型建築物的高度通常會用「米」來量度。" },
+            { id: 25, name: "金紫荊廣場上國旗旗杆的高度", icon: "fa-flag", value: 15, unit: "米", diff: [3], exp: "廣場上的旗杆有一定的高度，適合用「米」來表示。" },
+            { id: 26, name: "標準籃球場的長度", icon: "fa-basketball", value: 28, unit: "米", diff: [3], exp: "籃球場的範圍較大，適合用「米」作為單位。" },
+            { id: 27, name: "學校操場跑道一圈的長度", icon: "fa-person-running", value: 100, unit: "米", diff: [3], exp: "小學操場的跑道不會像運動場那麼長，大約是用「米」來量度百位數的距離。" },
+            { id: 28, name: "一架雙層巴士的長度", icon: "fa-bus", value: 12, unit: "米", diff: [3], exp: "在香港馬路上常見的雙層巴士，長度大約是12米。" },
+            { id: 29, name: "天壇大佛的高度", icon: "fa-vihara", value: 34, unit: "米", diff: [3], exp: "位於大嶼山的巨型青銅佛像非常宏偉，高度適合用「米」。" },
+            { id: 30, name: "國家體育場「鳥巢」的長度", icon: "fa-landmark", value: 330, unit: "米", diff: [3], exp: "舉辦過北京奧運的鳥巢體育館非常巨大，長度超過三百「米」。" },
+            { id: 31, name: "一列港鐵車廂的長度", icon: "fa-train-tram", value: 22, unit: "米", diff: [3], exp: "單獨一節火車或地鐵車廂的長度，用「米」來表示最合適。" },
+            { id: 32, name: "中銀大廈的高度", icon: "fa-city", value: 367, unit: "米", diff: [3], exp: "香港著名的摩天大廈高度都在數百米左右，用「米」量度。" },
+
+            // ================= 厘米 (cm) ================= (難度三)
+            { id: 33, name: "一張八達通卡的長度", icon: "fa-address-card", value: 8, unit: "厘米", diff: [3], exp: "八達通卡可以輕易放進錢包，長度適合用「厘米」。" },
+            { id: 34, name: "三年級小學生的平均身高", icon: "fa-child-reaching", value: 130, unit: "厘米", diff: [3], exp: "人的身高通常會用「厘米」或「米」來量度，這裡130配「厘米」最合適。" },
+            { id: 35, name: "學生文具盒的長度", icon: "fa-pencil", value: 20, unit: "厘米", diff: [3], exp: "用來裝筆和間尺的文具盒，長度適合用「厘米」。" },
+            { id: 36, name: "一本數學作業的長度", icon: "fa-book-open", value: 26, unit: "厘米", diff: [3], exp: "書本的長度和寬度，最常用的量度單位是「厘米」。" },
+            { id: 37, name: "小學生手掌的長度", icon: "fa-hand", value: 12, unit: "厘米", diff: [3], exp: "我們身體上較小的部位，如手掌、腳掌，常用「厘米」量度。" },
+            { id: 38, name: "一把長間尺的長度", icon: "fa-ruler", value: 30, unit: "厘米", diff: [3], exp: "數學堂常用的大間尺，標準長度是30厘米。" },
+            { id: 39, name: "班房黑板粉筆的長度", icon: "fa-chalkboard", value: 8, unit: "厘米", diff: [3], exp: "一支未用過的粉筆，長度大約是幾「厘米」。" },
+            { id: 40, name: "電腦鍵盤上空白鍵的長度", icon: "fa-keyboard", value: 10, unit: "厘米", diff: [3], exp: "鍵盤上的按鍵不會太大，用「厘米」量度最精確。" }
+        ];
+
+        /* 遊戲狀態管理 */
+        let gameState = {
+            studentName: '',
+            difficulty: 2,
+            source: 'db', // 'db' 或 'ai'
+            totalQuestions: 5,
+            gameQuestions: [],
+            currentIndex: 0,
+            score: 0,
+            correctCount: 0,
+            mistakes: [],
+            timeLeft: 120,
+            timeTaken: 0,
+            timerInterval: null,
+            isPlaying: false,
+            aiBadgeDataUrl: null
+        };
+
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let delay = 1000;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.ok) return res;
+                } catch (e) {
+                    // Ignore transient network errors during retries
+                }
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+            }
+            return await fetch(url, options);
+        }
+
+        async function startGame() {
+            const nameInput = document.getElementById('studentName').value.trim();
+            if (!nameInput) {
+                alert('請先輸入學生姓名！');
+                return;
+            }
+
+            gameState.studentName = nameInput;
+            gameState.difficulty = parseInt(document.querySelector('input[name="difficulty"]:checked').value);
+            gameState.source = document.querySelector('input[name="questionSource"]:checked').value;
+            gameState.totalQuestions = parseInt(document.getElementById('questionCount').value) || 5;
+            gameState.currentIndex = 0;
+            gameState.score = 0;
+            gameState.correctCount = 0;
+            gameState.mistakes = [];
+            gameState.timeLeft = 120;
+            gameState.aiBadgeDataUrl = null;
+
+            if (gameState.source === 'ai') {
+                showLoading("AI 智能導師出題中...", `Gemini 正在為你生成 ${gameState.totalQuestions} 道全新香港與生活情境數學題...`);
+                try {
+                    gameState.gameQuestions = await generateAIQuestions(gameState.difficulty, gameState.totalQuestions);
+                } catch (err) {
+                    console.warn("AI Generation failed, fallback to local DB:", err);
+                    let available = questionsDB.filter(q => q.diff.includes(gameState.difficulty));
+                    available.sort(() => 0.5 - Math.random());
+                    gameState.gameQuestions = available.slice(0, gameState.totalQuestions);
+                } finally {
+                    hideLoading();
+                }
+            } else {
+                let availableQuestions = questionsDB.filter(q => q.diff.includes(gameState.difficulty));
+                availableQuestions.sort(() => 0.5 - Math.random());
+                gameState.gameQuestions = availableQuestions.slice(0, gameState.totalQuestions);
+            }
+
+            gameState.isPlaying = true;
+
+            // 切換 UI
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('displayPlayerName').innerText = gameState.studentName;
+            
+            startTimer();
+            loadQuestion();
+        }
+
+        async function generateAIQuestions(difficulty, count) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            let unitOptionsText = difficulty === 3 ? "毫米、厘米、米、公里" : "毫米、公里";
+            
+            const systemPrompt = `你是一位香港小學三年級的數學老師。請為「保良局田家炳小學」設計${count}道關於長度單位的選擇題。
+目標單位限定於: [${unitOptionsText}]。
+題目背景請融入香港地標、大灣區建設、國家發展、生活事物或大埔地區特徵。
+
+請務必輸出 JSON 格式:
+[
+  {
+    "name": "題目描述，例如：港珠澳大橋的全長",
+    "icon": "fontawesome 圖標類名，例如 fa-bridge-water, fa-train, fa-ticket",
+    "value": 數字 (例如 55, 1, 150),
+    "unit": "正確單位 (毫米/厘米/米/公里)",
+    "exp": "簡短精闢的繁體中文解釋，適合小三學生理解"
+  }
+]`;
+
+            const payload = {
+                contents: [{ parts: [{ text: `請生成 ${count} 道小三數學題，難度等級為: ${difficulty}` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                name: { type: "STRING" },
+                                icon: { type: "STRING" },
+                                value: { type: "NUMBER" },
+                                unit: { type: "STRING" },
+                                exp: { type: "STRING" }
+                            },
+                            required: ["name", "icon", "value", "unit", "exp"]
+                        }
+                    }
+                }
+            };
+
+            const response = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error("No response from AI model");
+            
+            const parsed = JSON.parse(text);
+            return parsed.map((item, index) => ({
+                id: 100 + index,
+                name: item.name,
+                icon: item.icon.startsWith('fa-') ? item.icon : 'fa-ruler',
+                value: item.value,
+                unit: item.unit,
+                diff: [difficulty],
+                exp: item.exp
+            }));
+        }
+
+        function startTimer() {
+            const timerDisplay = document.getElementById('timerDisplay');
+            const timerText = document.getElementById('timerText');
+            
+            timerDisplay.className = "text-xl md:text-2xl font-black text-slate-700 bg-slate-100 px-4 py-1.5 rounded-xl border-2 border-slate-200 transition-colors duration-300 flex items-center justify-center";
+            
+            gameState.timerInterval = setInterval(() => {
+                if (!gameState.isPlaying) return;
+                
+                gameState.timeLeft--;
+                timerText.innerText = gameState.timeLeft;
+
+                if (gameState.timeLeft <= 10) {
+                    timerDisplay.className = "text-xl md:text-2xl font-black text-white bg-rose-500 px-4 py-1.5 rounded-xl border-2 border-rose-600 animate-pulse transition-colors duration-300 flex items-center justify-center shadow-lg shadow-rose-500/50";
+                }
+
+                if (gameState.timeLeft <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            const currentQ = gameState.gameQuestions[gameState.currentIndex];
+            
+            document.getElementById('progressText').innerText = `${gameState.currentIndex + 1} / ${gameState.totalQuestions}`;
+            
+            const iconEl = document.getElementById('questionIcon');
+            iconEl.className = `fa-solid ${currentQ.icon} text-5xl md:text-6xl drop-shadow-md text-blue-600`;
+
+            document.getElementById('aiHintBox').classList.add('hidden');
+
+            let qText = "";
+            if (gameState.difficulty === 1) {
+                qText = `${currentQ.name}`;
+            } else {
+                qText = `${currentQ.name} 大約是 <span class="text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">${currentQ.value}</span> [ ? ]`;
+            }
+            document.getElementById('questionText').innerHTML = qText;
+
+            const card = document.getElementById('questionCard');
+            card.classList.remove('pop-in');
+            void card.offsetWidth;
+            card.classList.add('pop-in');
+
+            renderOptions();
+        }
+
+        function renderOptions() {
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            let units = (gameState.difficulty === 3) 
+                ? ['毫米', '厘米', '米', '公里'] 
+                : ['毫米', '公里'];
+
+            units.forEach(unit => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 hover:text-blue-600 font-black text-xl md:text-3xl py-3.5 md:py-5 rounded-2xl flex items-center justify-center w-full shadow-sm";
+                btn.innerText = unit;
+                btn.onclick = () => checkAnswer(unit);
+                container.appendChild(btn);
+            });
+        }
+
+        async function fetchAIHint() {
+            const hintBox = document.getElementById('aiHintBox');
+            const hintText = document.getElementById('aiHintText');
+            hintBox.classList.remove('hidden');
+            hintText.innerText = "AI 導師思考中...";
+
+            const currentQ = gameState.gameQuestions[gameState.currentIndex];
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = "你是一位親切的小學數學老師。請用一兩句簡單活潑的話，給小三年級學生一個提示，引導他們判斷長度單位 (毫米/厘米/米/公里)。不要直接公佈答案！";
+            const userPrompt = `題目物件：${currentQ.name}，數值：${currentQ.value}，正確單位是：${currentQ.unit}。請給一個有趣的小提示。`;
+
+            try {
+                const res = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+                const data = await res.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                hintText.innerText = text || "想想看這個物件在日常生活中有幾大？是極薄、用尺量，還是要坐車才能到的距離呢？";
+            } catch (e) {
+                hintText.innerText = "小提示：極薄極細小的用「毫米」，跨區或跨城市的遙遠距離用「公里」！";
+            }
+        }
+
+        function checkAnswer(selectedUnit) {
+            if (!gameState.isPlaying) return;
+
+            const currentQ = gameState.gameQuestions[gameState.currentIndex];
+            
+            if (selectedUnit === currentQ.unit) {
+                gameState.correctCount++;
+                proceedToNext();
+            } else {
+                handleMistake(selectedUnit, currentQ);
+            }
+        }
+
+        function proceedToNext() {
+            gameState.currentIndex++;
+            if (gameState.currentIndex >= gameState.totalQuestions) {
+                endGame(true);
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function handleMistake(userAnswer, currentQ) {
+            gameState.mistakes.push({
+                question: gameState.difficulty === 1 ? currentQ.name : `${currentQ.name} (${currentQ.value})`,
+                correct: currentQ.unit,
+                wrong: userAnswer,
+                exp: currentQ.exp
+            });
+
+            gameState.isPlaying = false;
+            const modal = document.getElementById('feedbackModal');
+            document.getElementById('correctAnswerText').innerText = currentQ.unit;
+            document.getElementById('explanationText').innerText = currentQ.exp;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            let count = 3;
+            const countdownEl = document.getElementById('pauseCountdown');
+            countdownEl.innerText = count;
+            
+            const pauseInterval = setInterval(() => {
+                count--;
+                countdownEl.innerText = count;
+                if (count <= 0) {
+                    clearInterval(pauseInterval);
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    gameState.isPlaying = true;
+                    proceedToNext();
+                }
+            }, 1000);
+        }
+
+        async function speakExplanation() {
+            const expText = document.getElementById('explanationText').innerText;
+            const ttsBtn = document.getElementById('ttsBtn');
+            const originalHTML = ttsBtn.innerHTML;
+            ttsBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 載入語音...`;
+            ttsBtn.disabled = true;
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: `請用親切熱情的大學/小學老師語氣朗讀：${expText}` }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Sulafat" }
+                            }
+                        }
+                    }
+                };
+
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                    
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                }
+            } catch (err) {
+                console.error("TTS Error:", err);
+            } finally {
+                ttsBtn.innerHTML = originalHTML;
+                ttsBtn.disabled = false;
+            }
+        }
+
+        // Helper functions for PCM to WAV audio conversion
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcm16Data, sampleRate = 24000) {
+            const buffer = new ArrayBuffer(44 + pcm16Data.length * 2);
+            const view = new DataView(buffer);
+
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + pcm16Data.length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, pcm16Data.length * 2, true);
+
+            for (let i = 0; i < pcm16Data.length; i++) {
+                view.setInt16(44 + i * 2, pcm16Data[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function endGame(finished) {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            
+            gameState.timeTaken = 120 - gameState.timeLeft;
+            const minutes = Math.floor(gameState.timeTaken / 60);
+            const seconds = gameState.timeTaken % 60;
+            const timeFormatted = minutes > 0 ? `${minutes} 分 ${seconds} 秒` : `${seconds} 秒`;
+            
+            // 根據選定總題數計算最終得分 (滿分100分)
+            gameState.score = Math.round((gameState.correctCount / gameState.totalQuestions) * 100);
+
+            document.getElementById('gameScreen').classList.add('hidden');
+            const resultScreen = document.getElementById('resultScreen');
+            resultScreen.classList.remove('hidden');
+
+            document.getElementById('displayTimeTaken').innerText = finished ? timeFormatted : '-- 秒';
+            document.getElementById('displayFinalScore').innerText = `${gameState.score} 分`;
+
+            if (finished) {
+                if (gameState.score === 100) {
+                    document.getElementById('resultSubtitle').innerText = '太厲害了！你完美解開了所有測量密碼！';
+                } else {
+                    document.getElementById('resultSubtitle').innerText = '完成了所有題目！來看看哪裡可以做得更好。';
+                }
+            } else {
+                document.getElementById('resultTitle').innerHTML = '<i class="fa-solid fa-clock text-rose-500 mr-3"></i>時間到！';
+                document.getElementById('resultSubtitle').innerText = '未能在限時內完成所有題目，請再接再厲！';
+                document.getElementById('resultTitle').className = "text-3xl md:text-5xl font-black mb-3 text-rose-600";
+            }
+
+            if (gameState.mistakes.length > 0) {
+                const mistakesSection = document.getElementById('mistakesSection');
+                const mistakesList = document.getElementById('mistakesList');
+                mistakesSection.classList.remove('hidden');
+                mistakesList.innerHTML = '';
+                
+                gameState.mistakes.forEach((m, idx) => {
+                    mistakesList.innerHTML += `
+                        <li class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-rose-400">
+                            <div class="font-bold text-slate-800 mb-2">${idx+1}. ${m.question}</div>
+                            <div class="flex flex-wrap gap-3 text-sm mb-2">
+                                <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg line-through decoration-rose-500 decoration-2">你的選擇：${m.wrong}</span> 
+                                <span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-lg">正確單位：${m.correct}</span>
+                            </div>
+                            <div class="text-slate-600 text-xs md:text-sm bg-slate-50 p-2.5 rounded-lg"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> ${m.exp}</div>
+                        </li>
+                    `;
+                });
+            }
+        }
+
+        async function generateAIMascot() {
+            const btn = document.getElementById('generateMascotBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> AI 繪圖中...`;
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-image:generateContent?key=${apiKey}`;
+
+                const prompt = "A cute 3D cartoon owl wearing a graduation cap holding a ruler, colorful badge sticker style, vector art, bright vibrant, isolated on white background";
+
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                    })
+                });
+
+                const result = await response.json();
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    gameState.aiBadgeDataUrl = `data:image/png;base64,${base64Data}`;
+                    document.getElementById('mascotImg').src = gameState.aiBadgeDataUrl;
+                    document.getElementById('mascotTitle').innerText = `${gameState.studentName} 的解碼大師徽章`;
+                    document.getElementById('mascotImageWrapper').classList.remove('hidden');
+                    btn.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Mascot generation failed:", err);
+                btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 生成失敗，請重試`;
+                btn.disabled = false;
+            }
+        }
+
+        function downloadCertificate() {
+            const canvas = document.getElementById('certificateCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = "#f0f9ff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = "rgba(186, 230, 253, 0.3)";
+            ctx.lineWidth = 2;
+            for(let i = -canvas.height; i < canvas.width; i+=40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + canvas.height, canvas.height);
+                ctx.stroke();
+            }
+
+            ctx.lineWidth = 20;
+            ctx.strokeStyle = "#1e3a8a";
+            ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+            
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#fbbf24";
+            ctx.strokeRect(55, 55, canvas.width - 110, canvas.height - 110);
+
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            ctx.fillStyle = "#1e40af";
+            ctx.font = "bold 52px 'Noto Sans TC', sans-serif";
+            ctx.fillText("🏫 保良局田家炳小學", canvas.width / 2, 160);
+            
+            ctx.fillStyle = "#b45309";
+            ctx.font = "900 90px 'Noto Sans TC', sans-serif";
+            ctx.shadowColor = "rgba(0,0,0,0.1)";
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 4;
+            ctx.fillText("嘉 許 狀", canvas.width / 2, 290);
+            ctx.shadowColor = "transparent";
+            
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2 - 250, 360);
+            ctx.lineTo(canvas.width/2 + 250, 360);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            ctx.fillStyle = "#334155";
+            ctx.font = "bold 44px 'Noto Sans TC', sans-serif";
+            ctx.fillText(`頒發給：（${gameState.studentName}）`, canvas.width / 2, 460);
+            
+            ctx.font = "bold 40px 'Noto Sans TC', sans-serif";
+            ctx.fillStyle = "#475569";
+            ctx.fillText("在公里和毫米的任務中，你展現了勇氣，", canvas.width / 2, 560);
+            
+            ctx.fillStyle = "#15803d";
+            ctx.font = "900 48px 'Noto Sans TC', sans-serif";
+            ctx.fillText(`成功得到 [${gameState.score}] 分！`, canvas.width / 2, 640);
+            
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "bold 24px 'Noto Sans TC', sans-serif";
+            const diffText = gameState.difficulty === 1 ? "基礎配對" : (gameState.difficulty === 2 ? "數字配對" : "終極挑戰");
+            ctx.fillText(`挑戰難度：${diffText} | 模式：${gameState.source === 'ai' ? 'AI 智能題目' : '標準題庫'} | 題數：${gameState.totalQuestions}題`, canvas.width / 2, 700);
+
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+            
+            ctx.fillStyle = "#64748b";
+            ctx.font = "bold 32px 'Noto Sans TC', sans-serif";
+            ctx.textAlign = "right";
+            ctx.fillText(`📅 日期：${dateStr}`, canvas.width - 100, canvas.height - 100);
+
+            // Draw AI Badge onto Canvas if generated
+            if (gameState.aiBadgeDataUrl) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(160, canvas.height - 130, 70, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(img, 90, canvas.height - 200, 140, 140);
+                    ctx.restore();
+
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = "#fbbf24";
+                    ctx.beginPath();
+                    ctx.arc(160, canvas.height - 130, 70, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    saveCanvasImage(canvas);
+                };
+                img.src = gameState.aiBadgeDataUrl;
+            } else {
+                saveCanvasImage(canvas);
+            }
+        }
+
+        function saveCanvasImage(canvas) {
+            const dataURL = canvas.toDataURL('image/jpeg', 0.95);
+            const link = document.createElement('a');
+            link.download = `公里和毫米嘉許狀_${gameState.studentName}.jpg`;
+            link.href = dataURL;
+            link.click();
+        }
+
+        function showLoading(title, subtitle) {
+            document.getElementById('loadingTitle').innerText = title;
+            document.getElementById('loadingSubtitle').innerText = subtitle;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
