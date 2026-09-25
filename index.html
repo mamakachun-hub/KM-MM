@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>保良局田家炳小學 - 公里和毫米解碼遊戲 (AI 增強版)</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖標庫 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
@@ -175,8 +177,14 @@
                         <i class="fa-solid fa-flag-checkered mr-2"></i>進度: <span id="progressText">1 / 5</span>
                     </div>
                 </div>
-                <div id="timerDisplay" class="text-xl md:text-2xl font-black text-slate-700 bg-slate-100 px-4 py-1.5 rounded-xl border-2 border-slate-200 transition-colors duration-300 flex items-center justify-center">
-                    <i class="fa-regular fa-clock mr-2"></i> <span id="timerText">120</span>s
+                <div class="flex items-center gap-2">
+                    <div id="timerDisplay" class="text-xl md:text-2xl font-black text-slate-700 bg-slate-100 px-4 py-1.5 rounded-xl border-2 border-slate-200 transition-colors duration-300 flex items-center justify-center">
+                        <i class="fa-regular fa-clock mr-2"></i> <span id="timerText">120</span>s
+                    </div>
+                    <!-- 中途退出按鈕 -->
+                    <button onclick="showExitModal()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-3 py-2 rounded-xl border border-rose-200 transition text-sm md:text-base flex items-center gap-1.5 active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> 退出
+                    </button>
                 </div>
             </div>
 
@@ -299,6 +307,25 @@
         </div>
     </div>
 
+    <!-- 中途退出確認 Modal -->
+    <div id="exitModal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col items-center justify-center fade-in backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl pop-in relative overflow-hidden border border-slate-100">
+            <div class="inline-block bg-rose-100 p-4 rounded-full mb-3 text-rose-600 text-3xl">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800 mb-2">確定要退出嗎？</h3>
+            <p class="text-slate-500 text-sm mb-6 font-bold">退出後將不會保留目前的答題進度與成績。</p>
+            <div class="flex gap-3">
+                <button onclick="hideExitModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-base active:scale-95">
+                    繼續遊戲
+                </button>
+                <button onclick="quitGame()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow-md text-base active:scale-95">
+                    確定退出
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 隱藏的 Canvas 供生成證書用 -->
     <canvas id="certificateCanvas" width="1200" height="848" class="hidden"></canvas>
 
@@ -379,7 +406,7 @@
                     const res = await fetch(url, options);
                     if (res.ok) return res;
                 } catch (e) {
-                    // Ignore transient network errors during retries
+                    // 忽略網路發送暫時失敗並進行重試
                 }
                 await new Promise(r => setTimeout(r, delay));
                 delay *= 2;
@@ -425,7 +452,7 @@
 
             gameState.isPlaying = true;
 
-            // 切換 UI
+            // 切換 UI 畫面
             document.getElementById('setupScreen').classList.add('hidden');
             document.getElementById('gameScreen').classList.remove('hidden');
             document.getElementById('displayPlayerName').innerText = gameState.studentName;
@@ -705,7 +732,6 @@
             }
         }
 
-        // Helper functions for PCM to WAV audio conversion
         function base64ToArrayBuffer(base64) {
             const binaryString = atob(base64);
             const bytes = new Uint8Array(binaryString.length);
@@ -730,8 +756,8 @@
             writeString(8, 'WAVE');
             writeString(12, 'fmt ');
             view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); // PCM
-            view.setUint16(22, 1, true); // Mono
+            view.setUint16(20, 1, true); // PCM 格式
+            view.setUint16(22, 1, true); // Mono 單聲道
             view.setUint32(24, sampleRate, true);
             view.setUint32(28, sampleRate * 2, true);
             view.setUint16(32, 2, true);
@@ -773,7 +799,7 @@
                 }
             } else {
                 document.getElementById('resultTitle').innerHTML = '<i class="fa-solid fa-clock text-rose-500 mr-3"></i>時間到！';
-                document.getElementById('resultSubtitle').innerText = '未能在限時內完成所有題目，請再接再厲！';
+                document.getElementById('resultSubtitle').innerText = '未能在限時內完成所有題目，請再接再勵！';
                 document.getElementById('resultTitle').className = "text-3xl md:text-5xl font-black mb-3 text-rose-600";
             }
 
@@ -907,7 +933,7 @@
             ctx.textAlign = "right";
             ctx.fillText(`📅 日期：${dateStr}`, canvas.width - 100, canvas.height - 100);
 
-            // Draw AI Badge onto Canvas if generated
+            // 如果有生成 AI 徽章，繪製到嘉許狀上
             if (gameState.aiBadgeDataUrl) {
                 const img = new Image();
                 img.onload = () => {
@@ -949,6 +975,25 @@
 
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        /* 退出遊戲邏輯 */
+        function showExitModal() {
+            document.getElementById('exitModal').classList.remove('hidden');
+            document.getElementById('exitModal').classList.add('flex');
+        }
+
+        function hideExitModal() {
+            document.getElementById('exitModal').classList.add('hidden');
+            document.getElementById('exitModal').classList.remove('flex');
+        }
+
+        function quitGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            hideExitModal();
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.remove('hidden');
         }
     </script>
 </body>
